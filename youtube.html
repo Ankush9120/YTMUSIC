@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>YouTube Music Player</title>
 	<script src="https://kit.fontawesome.com/e04ccf61b7.js" crossorigin="anonymous"></script>
-	<link rel="stylesheet" href="index.css">
+	<link rel="stylesheet" href="youtube.css">
 	<script src="https://kit.fontawesome.com/3414cae6ee.js" crossorigin="anonymous"></script>
 </head>
 
@@ -72,6 +72,109 @@
 			document.getElementById('screen').classList.toggle("screen-open");
 		}
 	</script>
+	<script>
+			document.getElementById("fname")
+			.addEventListener("keyup", function(event) {
+			event.preventDefault();
+			if (event.keyCode === 13) {
+				document.getElementById("btn").click();
+			}
+		});
+		var ws = io();
+		var songsList = [];
+		var onetime = true;
+		function aa() {
+			ss = document.getElementById("fname").value
+			if (ss != "") {
+				document.getElementsByClassName('main-wrapper')[0].style.boxShadow = "0px 0px 20px 12px #dcd16c"
+				ws.send(ss)
+				ws.on('message', function(evt){
+				data = JSON.parse(evt)
+					var dict = {
+						title: data['title'],
+						artist: "",
+						album: "",
+						link: data["url"],
+						thumb: data['thumbnail']
+					}
+					songsList.push(dict)
+					if(onetime){toggleState(); onetime = false}
+				nextSong()
+				document.getElementById('text').innerText = "Playing.."+ ss;
+				document.getElementById("fname").value = ""
+				document.getElementsByClassName('main-wrapper')[0].style.boxShadow = "0px 0px 20px 12px #6cdc72"
+				 })
+			} else {
+				document.querySelector(".song-info-title").innerHTML = "Please Enter <br> Song Name"
+			}
+		}
 
+		var currIndex = 0;
+		var isPlaying = false;
+		var currSong = new Audio();
+
+		var songThumb = document.querySelector(".song-thumb");
+		var songTitle = document.querySelector(".song-info-title");
+		var songArtist = document.querySelector(".song-info-artist");
+		var songAlbum = document.querySelector(".song-info-album");
+
+		var stateButton = document.querySelector(".player-state-btn");
+		var songProgressBar = document.querySelector(".song-progress-value");
+		var volumeSlider = document.querySelector("#volume-slider");
+		var volumeTrail = document.querySelector(".volume-trail");
+
+		function changeSong() {
+			let currentStatus = isPlaying;
+			if (currentStatus) toggleState();
+			songTitle.innerHTML = songsList[currIndex]["title"];
+			songArtist.innerHTML = songsList[currIndex]["artist"];
+			songAlbum.innerHTML = songsList[currIndex]["album"];
+			songThumb.style.backgroundImage = `url(${songsList[currIndex]["thumb"]})`;
+			currSong.src = songsList[currIndex]["link"];
+
+			if (currentStatus) toggleState();
+		}
+
+		function nextSong() {
+			currIndex++;
+			if (currIndex >= songsList.length) currIndex = 0;
+			changeSong();
+		}
+
+		function prevSong() {
+			currIndex--;
+			if (currIndex < 0) currIndex = songsList.length - 1;
+			changeSong();
+		}
+
+		function toggleState() {
+			if (isPlaying) {
+				currSong.pause();
+				stateButton.classList = "fas fa-play-circle player-state-btn";
+			} else {
+				currSong.play();
+				stateButton.classList = "fas fa-pause-circle player-state-btn";
+			}
+			isPlaying = !isPlaying;
+		}
+
+		function adjustVolume(currVol) {
+			currSong.volume = currVol;
+			console.log(currVol, currVol !== "0", currVol !== 0);
+			if (currVol !== "0" && currVol !== 0)
+				volumeTrail.style.width = `${currVol * 100 - 2}%`;
+			else
+				volumeTrail.style.width = "0%";
+			volumeSlider.value = currVol;
+		}
+		// nextSong();
+		currSong.addEventListener('timeupdate', () => {
+			let currPosition = currSong.currentTime / currSong.duration * 600;
+			if (!isNaN(currPosition))
+				songProgressBar.setAttribute("stroke-dasharray", `${currPosition} ${600-currPosition}`);
+			else
+				songProgressBar.setAttribute("stroke-dasharray", "0 600");
+		});
+	</script>
 	</body>
 </html>
